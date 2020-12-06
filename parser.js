@@ -1,7 +1,9 @@
 let request = require("request");
-let cheerio= require("cheerio");
-let url='';
-let furl='';
+let cheerio = require("cheerio");
+let fs = require("fs");
+let path = require("path");
+let xlsx = require("xlsx");
+
 request("https://www.amazon.in/",whendataarrive1);
 function whendataarrive1(err,resp,html){
    // console.log(html);
@@ -37,14 +39,72 @@ function lastpage(furl){
         let phoneName=phoneNameArr.trim();
         let priceArr=sTool(priceLink[i]).text();
         let price=priceArr;
-        if(price)
-        console.log(phoneName);
-        console.log(price);
-         
+        // if(price)
+        // console.log(phoneName);
+        // console.log(price);
+        processData(price,phoneName)  
     }
     
     // if(price<140000){
     //     console.log("cheap");
     // } 
   }
+}
+
+function processData(price,phoneName)
+{
+    let dirPath = "Amazon";
+    catgry = "Budget Phones"
+    let CData=
+    {
+        Price:price,
+        Name:phoneName
+    }
+
+    if (fs.existsSync(dirPath))
+    {
+
+    }
+    else
+    {
+        fs.mkdirSync(dirPath);
+    }
+    let Path= path.join(dirPath,catgry+".xlsx");
+    let Data=[];
+
+    if(fs.existsSync(Path))
+    {
+    Data=excelReader(Path,catgry)
+    Data.push(CData);
+    }
+
+    else
+    {
+    console.log(Path,"created");
+    Data=[CData];
+    }
+    excelWriter(Path,Data,catgry);
+}
+
+function excelReader(Path,catgry) 
+{
+    if (!fs.existsSync(Path)) 
+    {
+        return null;
+    } 
+    else
+    {
+    let wt = xlsx.readFile(Path);
+    let excelData = wt.Sheets[catgry];
+    let ans = xlsx.utils.sheet_to_json(excelData);
+    return ans;
+    }
+}
+
+function excelWriter(Path, json, catgry) 
+{
+    let newWB = xlsx.utils.book_new();
+    let newWS = xlsx.utils.json_to_sheet(json);
+    xlsx.utils.book_append_sheet(newWB, newWS, catgry); 
+    xlsx.writeFile(newWB, Path);
 }
